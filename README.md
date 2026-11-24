@@ -27,6 +27,49 @@ state of charge, and replans every 15 minutes.
 
 Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
 
+## How the pieces fit together
+
+Three parts work in a chain: the optimizer plans, the automation decides what the inverter
+does right now, and AlphaESS Modbus TCP sends that to the inverter.
+
+```mermaid
+flowchart LR
+    subgraph IN["Inputs"]
+        NP["Nord Pool<br/>prices today and tomorrow"]
+        REC["Recorder<br/>28 days of house load"]
+        SF["Solar forecast<br/>optional"]
+        EXT["EV charger power, holiday switch<br/>optional"]
+        SET["Your settings<br/>setup fields and sliders"]
+    end
+
+    OPT["AlphaESS Battery Optimizer<br/>plans every quarter hour"]
+    AUTO["Example automation<br/>battery-control.yaml"]
+    MB["AlphaESS Modbus TCP<br/>by senalse"]
+    INV[("AlphaESS inverter<br/>and battery")]
+
+    NP --> OPT
+    REC --> OPT
+    SF --> OPT
+    EXT --> OPT
+    SET --> OPT
+
+    OPT -- "action, target SoC,<br/>reserve, charge ceiling" --> AUTO
+    AUTO -- "dispatch mode, power, duration,<br/>excess export on/off" --> MB
+    MB -- "Modbus TCP" --> INV
+    INV -- "measurements" --> MB
+    MB -- "SoC, capacity,<br/>house load" --> OPT
+    MB -- "SoC, excess power" --> AUTO
+```
+
+| Part | Reads | Produces |
+|---|---|---|
+| **Optimizer** (this integration) | Nord Pool prices, state of charge and capacity, house load history from the recorder, solar forecast and EV charger power if you set them, the holiday switch, your settings (power, SoC limits, fees, aggressiveness, backup, energy tax, wear cost, netting regime) | `sensor.…_action` with the target SoC for the quarter, `sensor.…_reserve`, `sensor.…_charge_ceiling` and the full plan |
+| **Automation** ([battery-control.yaml](automations/battery-control.yaml)) | The optimizer's sensors, the live state of charge, *Excess Power*, the clock (every quarter hour) | Dispatch mode, power and duration, and *Excess Export* on or off |
+| **AlphaESS Modbus TCP** ([senalse](https://github.com/senalse/ha-alphaess-modbus)) | The dispatch entities the automation sets | Modbus writes to the inverter, and the measurements the other two parts read |
+
+The optimizer never writes to the inverter. Turn the automation off and the inverter goes
+back to its own settings once the last dispatch command runs out.
+
 ![Battery plan chart](docs/images/plan-chart.png)
 
 ## Requirements
