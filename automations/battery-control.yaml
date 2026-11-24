@@ -5,6 +5,8 @@
 # author's SMILE-G3-T10 since the end of October 2026, switched to this integration's sensors
 # and with personal helpers taken out.
 #
+# Needs AlphaESS Modbus TCP v1.16.0 or newer (Excess Power sensor, Excess Export Duration).
+#
 # Entity IDs assume the default names: an inverter device called "AlphaESS Inverter" in
 # AlphaESS Modbus TCP, and the optimizer set up on that device. See docs/automation.md.
 #
@@ -69,8 +71,7 @@ triggers:
   - trigger: template
     value_template: >-
       {{ is_state('switch.alphaess_inverter_excess_export', 'on')
-         and states('sensor.alphaess_inverter_current_pv_production') | float(0)
-             < states('sensor.alphaess_inverter_current_house_load') | float(0) }}
+         and states('sensor.alphaess_inverter_excess_power') | float(0) <= 0 }}
     for:
       seconds: 30
     id: no_surplus
@@ -210,11 +211,18 @@ actions:
           - condition: template
             value_template: >-
               {{ soc > 95 if is_state('switch.alphaess_inverter_excess_export', 'on') else soc > 98 }}
-          - condition: template
-            value_template: >-
-              {{ states('sensor.alphaess_inverter_current_pv_production') | float(0)
-                 > states('sensor.alphaess_inverter_current_house_load') | float(0) }}
+          - condition: numeric_state
+            entity_id: sensor.alphaess_inverter_excess_power
+            above: 0
         sequence:
+          # Safety net: excess export stops by itself 20 minutes after the last run of this
+          # branch, for example when the automation is turned off. Every quarter-hour run
+          # re-arms it, so while the battery is full it stays on.
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_excess_export_duration
+            data:
+              value: 20
           - action: switch.turn_on
             target:
               entity_id: switch.alphaess_inverter_excess_export

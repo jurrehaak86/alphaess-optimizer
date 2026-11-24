@@ -5,7 +5,9 @@ is an automation that carries out that advice through the dispatch entities of A
 Modbus TCP. It's the automation that has controlled the author's SMILE-G3-T10 since the end
 of October 2026, switched to this integration's sensors and with personal helpers taken out.
 
-You install it yourself, so you stay in control of what the inverter does.
+You install it yourself, so you stay in control of what the inverter does. It needs
+AlphaESS Modbus TCP v1.16.0 or newer, which added the *Excess Power* sensor and the
+*Excess Export Duration* setting.
 
 ## What it does
 
@@ -29,9 +31,12 @@ It also has a few safety checks:
 - If the state of charge is missing (for example during a backup or a restart), the
   battery goes to balance. After 10 minutes without a state of charge you get a
   notification.
-- When the battery is nearly full (above 98 %) and the sun gives more than the house uses,
-  it turns on excess export so the surplus goes to the grid. Below 95 %, or when the
-  surplus is gone, it turns excess export off again.
+- When the battery is nearly full (above 98 %) and *Excess Power* is above zero (the sun
+  gives more than the house uses), it turns on excess export so the surplus goes to the
+  grid. Below 95 %, or when the surplus is gone for 30 seconds, it turns excess export off
+  again. Each time it turns excess export on, it sets *Excess Export Duration* to 20
+  minutes. The quarter-hour runs keep renewing that, so excess export only stops by itself
+  when the automation no longer runs.
 
 ## Before you add it
 
@@ -61,7 +66,11 @@ which branch ran and why.
 ## Turning it off
 
 Turn the automation off. The last dispatch command runs out after 15 minutes
-(`dispatch_duration`), and the inverter then goes back to its own settings.
+(`dispatch_duration`), and excess export, if it was on, within 20 minutes. The inverter
+then goes back to its own settings.
+
+*Excess Export Duration* stays at 20 afterwards. If you use excess export by hand later
+and want it to run until you turn it off, set it back to 0.
 
 ## Charging an electric car
 

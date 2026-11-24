@@ -34,14 +34,13 @@ async def calls(hass):
     }
 
 
-async def _setup(hass, *, advice, soc, target, reserve=40, ceiling=95, pv=0, load=300,
+async def _setup(hass, *, advice, soc, target, reserve=40, ceiling=95, excess_power=0,
                  excess="off"):
     hass.states.async_set(ACTION, advice, {"expected_soc_end_of_quarter": target})
     hass.states.async_set(SOC, str(soc))
     hass.states.async_set("sensor.optimizer_alphaess_inverter_reserve", str(reserve))
     hass.states.async_set("sensor.optimizer_alphaess_inverter_charge_ceiling", str(ceiling))
-    hass.states.async_set("sensor.alphaess_inverter_current_pv_production", str(pv))
-    hass.states.async_set("sensor.alphaess_inverter_current_house_load", str(load))
+    hass.states.async_set("sensor.alphaess_inverter_excess_power", str(excess_power))
     hass.states.async_set("switch.alphaess_inverter_excess_export", excess)
     cfg = yaml.safe_load(YAML.read_text())
     assert await async_setup_component(hass, "automation", {"automation": [cfg]})
@@ -105,12 +104,33 @@ async def test_balance(hass, calls):
     assert _mode(calls) == "Load Following (3)"
 
 
+def _is(call, entity_id):
+    return call.data["entity_id"] in (entity_id, [entity_id])
+
+
 async def test_excess_export_when_full_and_sunny(hass, calls):
-    await _setup(hass, advice="balance", soc=99, target=99, pv=3000, load=300)
+    await _setup(hass, advice="balance", soc=99, target=99, excess_power=2700)
     await _run(hass)
-    assert any(c.data["entity_id"] in ("switch.alphaess_inverter_excess_export",
-                                       ["switch.alphaess_inverter_excess_export"])
-               for c in calls["on"])
+    assert any(_is(c, "switch.alphaess_inverter_excess_export") for c in calls["on"])
+    # auto-off safety net armed (AlphaESS Modbus TCP v1.16.0+)
+    assert [c.data["value"] for c in calls["number"]
+            if _is(c, "number.alphaess_inverter_excess_export_duration")] == [20]
+    assert not calls["mode"]
+
+
+async def test_excess_export_stops_without_surplus(hass, calls):
+    # Full battery, excess export on, but the sun no longer covers the house
+    await _setup(hass, advice="balance", soc=97, target=97, excess_power=0, excess="on")
+    await _run(hass)
+    assert any(_is(c, "switch.alphaess_inverter_excess_export") for c in calls["off"])
+    assert _mode(calls) == "Load Following (3)"
+
+
+async def test_excess_export_hysteresis_keeps_running(hass, calls):
+    # Between 95 and 98 % with excess export already on: keep exporting
+    await _setup(hass, advice="hold", soc=96, target=96, excess_power=1500, excess="on")
+    await _run(hass)
+    assert any(_is(c, "switch.alphaess_inverter_excess_export") for c in calls["on"])
     assert not calls["mode"]
 
 
