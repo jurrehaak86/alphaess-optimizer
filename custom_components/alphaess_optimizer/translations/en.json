@@ -1,0 +1,113 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AlphaESS battery",
+        "description": "Pick your inverter from the AlphaESS Modbus TCP integration. State of charge, capacity and house load are found automatically.",
+        "data": {
+          "device_id": "AlphaESS inverter",
+          "power_kw": "Max charge/discharge power",
+          "floor_pct": "Minimum state of charge (inverter floor)",
+          "max_soc_pct": "Maximum state of charge",
+          "eta": "Efficiency per direction"
+        }
+      },
+      "prices": {
+        "title": "Prices",
+        "description": "Nord Pool sensor (HACS version) with `raw_today` and `raw_tomorrow` attributes.",
+        "data": {
+          "price_entity": "Nord Pool price sensor",
+          "price_all_in": "Price already includes tax, fees and VAT",
+          "fee_in": "Supplier purchase fee (excl. VAT)",
+          "fee_out": "Supplier feed-in fee (no netting)",
+          "netting_deduction": "Deduction on feed-in price during netting",
+          "vat_pct": "VAT"
+        }
+      },
+      "solar": {
+        "title": "Solar (optional)",
+        "description": "Forecast of the remaining solar production today. The charge ceiling leaves room for it.",
+        "data": { "pv_remaining_entity": "Solar forecast remaining today" }
+      },
+      "usage": {
+        "title": "Consumption",
+        "description": "The consumption profile is built from the long-term statistics of the house load (last 28 days, weekday and weekend apart).",
+        "data": {
+          "ev_power_entity": "EV charging power (subtracted from the profile)",
+          "holiday_entity": "Holiday switch",
+          "holiday_factor": "Consumption factor during holiday",
+          "yearly_kwh": "Yearly consumption (fallback without statistics)"
+        }
+      }
+    },
+    "error": {
+      "entities_not_found": "State of charge, capacity or house load not found on this device.",
+      "no_raw_today": "This sensor has no raw_today attribute. Use the Nord Pool integration from HACS."
+    },
+    "abort": {
+      "already_configured": "This inverter is already configured.",
+      "alphaess_missing": "Install and set up the AlphaESS Modbus TCP integration first.",
+      "nordpool_missing": "Install and set up the Nord Pool integration from HACS first."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Battery",
+        "data": {
+          "power_kw": "Max charge/discharge power",
+          "floor_pct": "Minimum state of charge (inverter floor)",
+          "max_soc_pct": "Maximum state of charge",
+          "eta": "Efficiency per direction"
+        }
+      },
+      "prices": {
+        "title": "Prices",
+        "data": {
+          "price_entity": "Nord Pool price sensor",
+          "price_all_in": "Price already includes tax, fees and VAT",
+          "fee_in": "Supplier purchase fee (excl. VAT)",
+          "fee_out": "Supplier feed-in fee (no netting)",
+          "netting_deduction": "Deduction on feed-in price during netting",
+          "vat_pct": "VAT"
+        }
+      },
+      "solar": {
+        "title": "Solar (optional)",
+        "data": { "pv_remaining_entity": "Solar forecast remaining today" }
+      },
+      "usage": {
+        "title": "Consumption",
+        "data": {
+          "ev_power_entity": "EV charging power (subtracted from the profile)",
+          "holiday_entity": "Holiday switch",
+          "holiday_factor": "Consumption factor during holiday",
+          "yearly_kwh": "Yearly consumption (fallback without statistics)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "action": {
+        "name": "Action",
+        "state": { "charge": "Charge", "discharge": "Discharge", "balance": "Balance", "hold": "Hold" }
+      },
+      "next_charge": { "name": "Next charge" },
+      "next_discharge": { "name": "Next discharge" },
+      "next_hold": { "name": "Next hold" },
+      "reserve_pct": { "name": "Reserve" },
+      "ceiling_pct": { "name": "Charge ceiling" }
+    },
+    "number": {
+      "aggressiveness": { "name": "Aggressiveness" },
+      "backup_target": { "name": "Backup target" },
+      "backup_weight": { "name": "Backup weight" },
+      "energy_tax": { "name": "Energy tax" },
+      "wear_cost": { "name": "Wear cost" }
+    },
+    "select": {
+      "netting_regime": { "name": "Netting regime", "state": { "2026": "2026 (netting)", "2027": "2027 (no netting)" } }
+    }
+  }
+}

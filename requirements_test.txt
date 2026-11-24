@@ -1,0 +1,4 @@
+# Test dependencies. Needs Python >= 3.14.
+# pytest-homeassistant is released together with Home Assistant and pins the same
+# version. Bump it together with the Home Assistant you run.
+pytest-homeassistant==2026.11.2

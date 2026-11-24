@@ -1,0 +1,14 @@
+{
+  "domain": "alphaess_optimizer",
+  "name": "AlphaESS Battery Optimizer",
+  "after_dependencies": ["alphaess_modbus", "nordpool"],
+  "codeowners": ["@jurrehaak86"],
+  "config_flow": true,
+  "dependencies": ["recorder"],
+  "documentation": "https://github.com/jurrehaak86/alphaess-optimizer",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/jurrehaak86/alphaess-optimizer/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

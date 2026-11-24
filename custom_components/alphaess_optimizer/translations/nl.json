@@ -1,0 +1,113 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AlphaESS-accu",
+        "description": "Kies je omvormer uit de AlphaESS Modbus TCP-integratie. SoC, capaciteit en huisverbruik worden automatisch gevonden.",
+        "data": {
+          "device_id": "AlphaESS-omvormer",
+          "power_kw": "Max laad-/ontlaadvermogen",
+          "floor_pct": "Minimale SoC (ondergrens omvormer)",
+          "max_soc_pct": "Maximale SoC",
+          "eta": "Rendement per richting"
+        }
+      },
+      "prices": {
+        "title": "Prijzen",
+        "description": "Nord Pool-sensor (HACS-versie) met de attributen `raw_today` en `raw_tomorrow`.",
+        "data": {
+          "price_entity": "Nord Pool-prijssensor",
+          "price_all_in": "Prijs is al inclusief belasting, vergoedingen en btw",
+          "fee_in": "Inkoopvergoeding leverancier (excl. btw)",
+          "fee_out": "Terugleververgoeding leverancier (zonder saldering)",
+          "netting_deduction": "Aftrek op terugleverprijs bij saldering",
+          "vat_pct": "Btw"
+        }
+      },
+      "solar": {
+        "title": "Zon (optioneel)",
+        "description": "Verwachte resterende zonne-opbrengst vandaag. Het laadplafond houdt daar ruimte voor vrij.",
+        "data": { "pv_remaining_entity": "Zonnevoorspelling resterend vandaag" }
+      },
+      "usage": {
+        "title": "Verbruik",
+        "description": "Het verbruiksprofiel komt uit de lange-termijnstatistieken van het huisverbruik (laatste 28 dagen, weekdag en weekend apart).",
+        "data": {
+          "ev_power_entity": "Laadvermogen auto (gaat van het profiel af)",
+          "holiday_entity": "Vakantieschakelaar",
+          "holiday_factor": "Verbruiksfactor tijdens vakantie",
+          "yearly_kwh": "Jaarverbruik (terugval zonder statistieken)"
+        }
+      }
+    },
+    "error": {
+      "entities_not_found": "SoC, capaciteit of huisverbruik niet gevonden op dit apparaat.",
+      "no_raw_today": "Deze sensor heeft geen raw_today-attribuut. Gebruik de Nord Pool-integratie uit HACS."
+    },
+    "abort": {
+      "already_configured": "Deze omvormer is al ingesteld.",
+      "alphaess_missing": "Installeer en configureer eerst de AlphaESS Modbus TCP-integratie.",
+      "nordpool_missing": "Installeer en configureer eerst de Nord Pool-integratie uit HACS."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Accu",
+        "data": {
+          "power_kw": "Max laad-/ontlaadvermogen",
+          "floor_pct": "Minimale SoC (ondergrens omvormer)",
+          "max_soc_pct": "Maximale SoC",
+          "eta": "Rendement per richting"
+        }
+      },
+      "prices": {
+        "title": "Prijzen",
+        "data": {
+          "price_entity": "Nord Pool-prijssensor",
+          "price_all_in": "Prijs is al inclusief belasting, vergoedingen en btw",
+          "fee_in": "Inkoopvergoeding leverancier (excl. btw)",
+          "fee_out": "Terugleververgoeding leverancier (zonder saldering)",
+          "netting_deduction": "Aftrek op terugleverprijs bij saldering",
+          "vat_pct": "Btw"
+        }
+      },
+      "solar": {
+        "title": "Zon (optioneel)",
+        "data": { "pv_remaining_entity": "Zonnevoorspelling resterend vandaag" }
+      },
+      "usage": {
+        "title": "Verbruik",
+        "data": {
+          "ev_power_entity": "Laadvermogen auto (gaat van het profiel af)",
+          "holiday_entity": "Vakantieschakelaar",
+          "holiday_factor": "Verbruiksfactor tijdens vakantie",
+          "yearly_kwh": "Jaarverbruik (terugval zonder statistieken)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "action": {
+        "name": "Actie",
+        "state": { "charge": "Laden", "discharge": "Ontladen", "balance": "Balans", "hold": "Vasthouden" }
+      },
+      "next_charge": { "name": "Volgende keer laden" },
+      "next_discharge": { "name": "Volgende keer ontladen" },
+      "next_hold": { "name": "Volgende keer vasthouden" },
+      "reserve_pct": { "name": "Reserve" },
+      "ceiling_pct": { "name": "Laadplafond" }
+    },
+    "number": {
+      "aggressiveness": { "name": "Agressiviteit" },
+      "backup_target": { "name": "Backup-streefwaarde" },
+      "backup_weight": { "name": "Backup-weging" },
+      "energy_tax": { "name": "Energiebelasting" },
+      "wear_cost": { "name": "Slijtagekosten" }
+    },
+    "select": {
+      "netting_regime": { "name": "Salderingsregime", "state": { "2026": "2026 (saldering)", "2027": "2027 (geen saldering)" } }
+    }
+  }
+}
