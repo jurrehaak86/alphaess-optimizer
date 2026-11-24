@@ -1,7 +1,10 @@
-# AlphaESS Battery Optimizer
+# AlphaESS Battery Optimizer for Home Assistant
 
-I built this optimizer to run several strategies at once on an AlphaESS home battery. It
-reads the battery through the [AlphaESS Modbus TCP integration](https://github.com/senalse/ha-alphaess-modbus)
+A Home Assistant integration that plans when an AlphaESS home battery should charge,
+discharge or wait, based on dynamic electricity prices.
+
+I built it to run several strategies at once on my own AlphaESS battery. It reads the
+battery through the [AlphaESS Modbus TCP integration](https://github.com/senalse/ha-alphaess-modbus)
 by senalse, which does the hard work of talking to the inverter. Many thanks for that.
 
 Your own home comes first: buy electricity when it's cheap, store solar energy, and use
@@ -12,14 +15,14 @@ Feedback is always welcome: open an [issue](https://github.com/jurrehaak86/alpha
 
 ## What it does
 
-Home Assistant integration that plans your AlphaESS home battery per quarter hour on
-dynamic (Nord Pool) prices: **charge**, **discharge**, **balance** (battery supplies the
-house) or **hold**. It uses dynamic programming over the state of charge across all
-known prices (today, and tomorrow once published) and replans every 15 minutes.
+For every quarter hour the integration picks one of four actions: **charge**, **discharge**,
+**balance** (the battery supplies the house) or **hold**. It plans across all known Nord Pool
+prices (today, and tomorrow once they're published) with dynamic programming over the
+state of charge, and replans every 15 minutes.
 
-> **Status: v0.1, advice only.** The integration does not control the inverter yet. It
-> publishes a sensor with the decision and the full plan, which you can follow in an
-> automation of your own. Not affiliated with AlphaESS.
+> **The integration advises; it does not control the inverter.** It publishes the decision
+> and the full plan as sensors. How the advice reaches your battery is up to you, for
+> example with an automation that follows the Action sensor. Not affiliated with AlphaESS.
 
 Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
 
@@ -30,7 +33,7 @@ Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
 | | |
 |---|---|
 | [AlphaESS Modbus TCP](https://github.com/senalse/ha-alphaess-modbus) | Required. State of charge, capacity and house load come from here. Should work with every model that integration supports; tested on a SMILE-G3-T10 |
-| [Nord Pool, community version](https://github.com/custom-components/nordpool) | Required. Needs the `raw_today` / `raw_tomorrow` attributes. The built-in Nord Pool integration is not supported yet |
+| [Nord Pool, community version](https://github.com/custom-components/nordpool) | Required. Needs the `raw_today` / `raw_tomorrow` attributes. The built-in Nord Pool integration is not supported |
 | Recorder | Built in. The consumption profile comes from long-term statistics |
 | Solar forecast | Optional. Any sensor with "remaining today" in kWh (Forecast.Solar, Solcast, ...) |
 
@@ -45,13 +48,9 @@ The full guide, with every setup field explained, is in [docs/installation.md](d
 
 ## Setup
 
-1. **Battery**: pick your AlphaESS inverter. Max power, minimum and maximum SoC, efficiency.
-2. **Prices**: the Nord Pool sensor. Tick *all-in* if your sensor already includes energy
-   tax, fees and VAT (via `additional_costs`); otherwise the integration adds them.
-3. **Solar** (optional): forecast of remaining production today. The charge ceiling keeps
-   room for it.
-4. **Consumption**: optional EV charging power (subtracted from the profile), holiday
-   switch and factor, yearly consumption as fallback.
+Setup has four screens: battery, prices, solar and consumption. Each field has a short
+help text in Home Assistant. [docs/installation.md](docs/installation.md) explains every
+field in full: what it means, where to find the value and what to fill in.
 
 Everything except the inverter can be changed later under *Configure*.
 
@@ -78,12 +77,15 @@ Everything except the inverter can be changed later under *Configure*.
 - A daily cycle limit is enforced with a Lagrange penalty on discharged kWh.
 - Wear cost per discharged kWh is part of every trade-off.
 
-## Not (yet) in v0.1
+## Known limitations
 
-- Controlling the inverter (dispatch). Planned for v0.2.
-- Solar production per quarter inside the model; solar only lowers the charge ceiling.
-- Holiday days are not excluded from the statistics.
-- Built-in Nord Pool integration and other price sources.
+- The plan doesn't count on solar production per quarter hour. The solar forecast only
+  lowers the charge ceiling, so on a sunny day the real state of charge can rise faster
+  than planned. The optimizer replans every quarter hour and catches up.
+- Days on which the holiday switch was on still count in the consumption profile. For
+  four weeks after a holiday the profile, and so the reserve, comes out somewhat low.
+- Prices only come from the community Nord Pool integration. The built-in Nord Pool
+  integration and other price sources (Tibber, ENTSO-e and so on) aren't supported.
 
 ## Dashboard
 

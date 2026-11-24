@@ -10,6 +10,13 @@
           "floor_pct": "Minimum state of charge (inverter floor)",
           "max_soc_pct": "Maximum state of charge",
           "eta": "Efficiency per direction"
+        },
+        "data_description": {
+          "device_id": "The inverter from AlphaESS Modbus TCP. State of charge, capacity and house load are found on it automatically.",
+          "power_kw": "Highest charge/discharge power. See select.…_inverter_ac_limit or your datasheet.",
+          "floor_pct": "SoC where the inverter stops discharging. See number.…_discharging_cutoff_soc.",
+          "max_soc_pct": "Highest SoC to charge to from the grid. Not above number.…_charging_cutoff_soc.",
+          "eta": "Share of energy kept per direction. 0.95 is about 90% round trip; leave it unless you measured it."
         }
       },
       "prices": {
@@ -22,12 +29,25 @@
           "fee_out": "Supplier feed-in fee (no netting)",
           "netting_deduction": "Deduction on feed-in price during netting",
           "vat_pct": "VAT"
+        },
+        "data_description": {
+          "price_entity": "Price sensor from the community Nord Pool integration (needs raw_today).",
+          "price_all_in": "On if the sensor shows what you pay per kWh, including fees, energy tax and VAT.",
+          "fee_in": "What your supplier adds per kWh bought, excluding VAT (inkoopvergoeding).",
+          "fee_out": "What your supplier deducts per kWh exported once netting has ended (2027).",
+          "netting_deduction": "Under netting (2026): fixed amount deducted from the feed-in price. 0 if you get the full price back.",
+          "vat_pct": "VAT on electricity, 21% in the Netherlands."
         }
       },
       "solar": {
         "title": "Solar (optional)",
         "description": "Forecast of the remaining solar production today. The charge ceiling leaves room for it.",
-        "data": { "pv_remaining_entity": "Solar forecast remaining today" }
+        "data": {
+          "pv_remaining_entity": "Solar forecast remaining today"
+        },
+        "data_description": {
+          "pv_remaining_entity": "Expected solar yield for the rest of today in kWh. The battery keeps room for it."
+        }
       },
       "usage": {
         "title": "Consumption",
@@ -37,6 +57,12 @@
           "holiday_entity": "Holiday switch",
           "holiday_factor": "Consumption factor during holiday",
           "yearly_kwh": "Yearly consumption (fallback without statistics)"
+        },
+        "data_description": {
+          "ev_power_entity": "Power sensor of your car charger. Subtracted from the house profile.",
+          "holiday_entity": "On while you're away. The profile is then multiplied by the factor below.",
+          "holiday_factor": "Share of normal use while away. 0.45 = 45%.",
+          "yearly_kwh": "From your energy bill. Only used until there are two weeks of statistics."
         }
       }
     },
@@ -59,6 +85,12 @@
           "floor_pct": "Minimum state of charge (inverter floor)",
           "max_soc_pct": "Maximum state of charge",
           "eta": "Efficiency per direction"
+        },
+        "data_description": {
+          "power_kw": "Highest charge/discharge power. See select.…_inverter_ac_limit or your datasheet.",
+          "floor_pct": "SoC where the inverter stops discharging. See number.…_discharging_cutoff_soc.",
+          "max_soc_pct": "Highest SoC to charge to from the grid. Not above number.…_charging_cutoff_soc.",
+          "eta": "Share of energy kept per direction. 0.95 is about 90% round trip; leave it unless you measured it."
         }
       },
       "prices": {
@@ -70,11 +102,24 @@
           "fee_out": "Supplier feed-in fee (no netting)",
           "netting_deduction": "Deduction on feed-in price during netting",
           "vat_pct": "VAT"
+        },
+        "data_description": {
+          "price_entity": "Price sensor from the community Nord Pool integration (needs raw_today).",
+          "price_all_in": "On if the sensor shows what you pay per kWh, including fees, energy tax and VAT.",
+          "fee_in": "What your supplier adds per kWh bought, excluding VAT (inkoopvergoeding).",
+          "fee_out": "What your supplier deducts per kWh exported once netting has ended (2027).",
+          "netting_deduction": "Under netting (2026): fixed amount deducted from the feed-in price. 0 if you get the full price back.",
+          "vat_pct": "VAT on electricity, 21% in the Netherlands."
         }
       },
       "solar": {
         "title": "Solar (optional)",
-        "data": { "pv_remaining_entity": "Solar forecast remaining today" }
+        "data": {
+          "pv_remaining_entity": "Solar forecast remaining today"
+        },
+        "data_description": {
+          "pv_remaining_entity": "Expected solar yield for the rest of today in kWh. The battery keeps room for it."
+        }
       },
       "usage": {
         "title": "Consumption",
@@ -83,6 +128,12 @@
           "holiday_entity": "Holiday switch",
           "holiday_factor": "Consumption factor during holiday",
           "yearly_kwh": "Yearly consumption (fallback without statistics)"
+        },
+        "data_description": {
+          "ev_power_entity": "Power sensor of your car charger. Subtracted from the house profile.",
+          "holiday_entity": "On while you're away. The profile is then multiplied by the factor below.",
+          "holiday_factor": "Share of normal use while away. 0.45 = 45%.",
+          "yearly_kwh": "From your energy bill. Only used until there are two weeks of statistics."
         }
       }
     }
@@ -91,23 +142,54 @@
     "sensor": {
       "action": {
         "name": "Action",
-        "state": { "charge": "Charge", "discharge": "Discharge", "balance": "Balance", "hold": "Hold" }
+        "state": {
+          "charge": "Charge",
+          "discharge": "Discharge",
+          "balance": "Balance",
+          "hold": "Hold"
+        }
       },
-      "next_charge": { "name": "Next charge" },
-      "next_discharge": { "name": "Next discharge" },
-      "next_hold": { "name": "Next hold" },
-      "reserve_pct": { "name": "Reserve" },
-      "ceiling_pct": { "name": "Charge ceiling" }
+      "next_charge": {
+        "name": "Next charge"
+      },
+      "next_discharge": {
+        "name": "Next discharge"
+      },
+      "next_hold": {
+        "name": "Next hold"
+      },
+      "reserve_pct": {
+        "name": "Reserve"
+      },
+      "ceiling_pct": {
+        "name": "Charge ceiling"
+      }
     },
     "number": {
-      "aggressiveness": { "name": "Aggressiveness" },
-      "backup_target": { "name": "Backup target" },
-      "backup_weight": { "name": "Backup weight" },
-      "energy_tax": { "name": "Energy tax" },
-      "wear_cost": { "name": "Wear cost" }
+      "aggressiveness": {
+        "name": "Aggressiveness"
+      },
+      "backup_target": {
+        "name": "Backup target"
+      },
+      "backup_weight": {
+        "name": "Backup weight"
+      },
+      "energy_tax": {
+        "name": "Energy tax"
+      },
+      "wear_cost": {
+        "name": "Wear cost"
+      }
     },
     "select": {
-      "netting_regime": { "name": "Netting regime", "state": { "2026": "2026 (netting)", "2027": "2027 (no netting)" } }
+      "netting_regime": {
+        "name": "Netting regime",
+        "state": {
+          "2026": "2026 (netting)",
+          "2027": "2027 (no netting)"
+        }
+      }
     }
   }
 }

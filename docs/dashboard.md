@@ -57,7 +57,7 @@ conditions that switch between the one-day and two-day chart.
 | Solid blue line | actual SoC |
 
 Bands to the right of "Now" are the plan. Bands to the left are what the optimizer
-advised earlier, taken from the history of the Action sensor. Since v0.1 only advises,
+advised earlier, taken from the history of the Action sensor. Since the integration only advises,
 they show the advice, not what the inverter did.
 
 Before tomorrow's prices are published (around 13:00) the chart covers today only.

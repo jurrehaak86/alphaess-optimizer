@@ -10,6 +10,13 @@
           "floor_pct": "Minimale SoC (ondergrens omvormer)",
           "max_soc_pct": "Maximale SoC",
           "eta": "Rendement per richting"
+        },
+        "data_description": {
+          "device_id": "De omvormer uit AlphaESS Modbus TCP. SoC, capaciteit en huisverbruik worden er vanzelf op gevonden.",
+          "power_kw": "Hoogste laad-/ontlaadvermogen. Zie select.…_inverter_ac_limit of het datasheet.",
+          "floor_pct": "SoC waarop de omvormer stopt met ontladen. Zie number.…_discharging_cutoff_soc.",
+          "max_soc_pct": "Hoogste SoC om vanaf het net naartoe te laden. Niet hoger dan number.…_charging_cutoff_soc.",
+          "eta": "Deel van de energie dat per richting overblijft. 0,95 is ongeveer 90% heen en terug; laat staan tenzij je het gemeten hebt."
         }
       },
       "prices": {
@@ -22,12 +29,25 @@
           "fee_out": "Terugleververgoeding leverancier (zonder saldering)",
           "netting_deduction": "Aftrek op terugleverprijs bij saldering",
           "vat_pct": "Btw"
+        },
+        "data_description": {
+          "price_entity": "Prijssensor uit de community-versie van Nord Pool (heeft raw_today nodig).",
+          "price_all_in": "Aan als de sensor toont wat je per kWh betaalt, inclusief vergoedingen, energiebelasting en btw.",
+          "fee_in": "Wat je leverancier per ingekochte kWh rekent, excl. btw (inkoopvergoeding).",
+          "fee_out": "Wat je leverancier per teruggeleverde kWh inhoudt na het einde van saldering (2027).",
+          "netting_deduction": "Bij saldering (2026): vast bedrag dat van de terugleverprijs af gaat. 0 als je de volle prijs terugkrijgt.",
+          "vat_pct": "Btw op stroom, 21% in Nederland."
         }
       },
       "solar": {
         "title": "Zon (optioneel)",
         "description": "Verwachte resterende zonne-opbrengst vandaag. Het laadplafond houdt daar ruimte voor vrij.",
-        "data": { "pv_remaining_entity": "Zonnevoorspelling resterend vandaag" }
+        "data": {
+          "pv_remaining_entity": "Zonnevoorspelling resterend vandaag"
+        },
+        "data_description": {
+          "pv_remaining_entity": "Verwachte zonne-opbrengst voor de rest van vandaag in kWh. De accu houdt daar ruimte voor vrij."
+        }
       },
       "usage": {
         "title": "Verbruik",
@@ -37,6 +57,12 @@
           "holiday_entity": "Vakantieschakelaar",
           "holiday_factor": "Verbruiksfactor tijdens vakantie",
           "yearly_kwh": "Jaarverbruik (terugval zonder statistieken)"
+        },
+        "data_description": {
+          "ev_power_entity": "Vermogenssensor van je laadpaal. Gaat van het huisprofiel af.",
+          "holiday_entity": "Aan als je weg bent. Het profiel wordt dan vermenigvuldigd met de factor hieronder.",
+          "holiday_factor": "Deel van het normale verbruik als je weg bent. 0,45 = 45%.",
+          "yearly_kwh": "Van je energierekening. Alleen gebruikt tot er twee weken statistieken zijn."
         }
       }
     },
@@ -59,6 +85,12 @@
           "floor_pct": "Minimale SoC (ondergrens omvormer)",
           "max_soc_pct": "Maximale SoC",
           "eta": "Rendement per richting"
+        },
+        "data_description": {
+          "power_kw": "Hoogste laad-/ontlaadvermogen. Zie select.…_inverter_ac_limit of het datasheet.",
+          "floor_pct": "SoC waarop de omvormer stopt met ontladen. Zie number.…_discharging_cutoff_soc.",
+          "max_soc_pct": "Hoogste SoC om vanaf het net naartoe te laden. Niet hoger dan number.…_charging_cutoff_soc.",
+          "eta": "Deel van de energie dat per richting overblijft. 0,95 is ongeveer 90% heen en terug; laat staan tenzij je het gemeten hebt."
         }
       },
       "prices": {
@@ -70,11 +102,24 @@
           "fee_out": "Terugleververgoeding leverancier (zonder saldering)",
           "netting_deduction": "Aftrek op terugleverprijs bij saldering",
           "vat_pct": "Btw"
+        },
+        "data_description": {
+          "price_entity": "Prijssensor uit de community-versie van Nord Pool (heeft raw_today nodig).",
+          "price_all_in": "Aan als de sensor toont wat je per kWh betaalt, inclusief vergoedingen, energiebelasting en btw.",
+          "fee_in": "Wat je leverancier per ingekochte kWh rekent, excl. btw (inkoopvergoeding).",
+          "fee_out": "Wat je leverancier per teruggeleverde kWh inhoudt na het einde van saldering (2027).",
+          "netting_deduction": "Bij saldering (2026): vast bedrag dat van de terugleverprijs af gaat. 0 als je de volle prijs terugkrijgt.",
+          "vat_pct": "Btw op stroom, 21% in Nederland."
         }
       },
       "solar": {
         "title": "Zon (optioneel)",
-        "data": { "pv_remaining_entity": "Zonnevoorspelling resterend vandaag" }
+        "data": {
+          "pv_remaining_entity": "Zonnevoorspelling resterend vandaag"
+        },
+        "data_description": {
+          "pv_remaining_entity": "Verwachte zonne-opbrengst voor de rest van vandaag in kWh. De accu houdt daar ruimte voor vrij."
+        }
       },
       "usage": {
         "title": "Verbruik",
@@ -83,6 +128,12 @@
           "holiday_entity": "Vakantieschakelaar",
           "holiday_factor": "Verbruiksfactor tijdens vakantie",
           "yearly_kwh": "Jaarverbruik (terugval zonder statistieken)"
+        },
+        "data_description": {
+          "ev_power_entity": "Vermogenssensor van je laadpaal. Gaat van het huisprofiel af.",
+          "holiday_entity": "Aan als je weg bent. Het profiel wordt dan vermenigvuldigd met de factor hieronder.",
+          "holiday_factor": "Deel van het normale verbruik als je weg bent. 0,45 = 45%.",
+          "yearly_kwh": "Van je energierekening. Alleen gebruikt tot er twee weken statistieken zijn."
         }
       }
     }
@@ -91,23 +142,54 @@
     "sensor": {
       "action": {
         "name": "Actie",
-        "state": { "charge": "Laden", "discharge": "Ontladen", "balance": "Balans", "hold": "Vasthouden" }
+        "state": {
+          "charge": "Laden",
+          "discharge": "Ontladen",
+          "balance": "Balans",
+          "hold": "Vasthouden"
+        }
       },
-      "next_charge": { "name": "Volgende keer laden" },
-      "next_discharge": { "name": "Volgende keer ontladen" },
-      "next_hold": { "name": "Volgende keer vasthouden" },
-      "reserve_pct": { "name": "Reserve" },
-      "ceiling_pct": { "name": "Laadplafond" }
+      "next_charge": {
+        "name": "Volgende keer laden"
+      },
+      "next_discharge": {
+        "name": "Volgende keer ontladen"
+      },
+      "next_hold": {
+        "name": "Volgende keer vasthouden"
+      },
+      "reserve_pct": {
+        "name": "Reserve"
+      },
+      "ceiling_pct": {
+        "name": "Laadplafond"
+      }
     },
     "number": {
-      "aggressiveness": { "name": "Agressiviteit" },
-      "backup_target": { "name": "Backup-streefwaarde" },
-      "backup_weight": { "name": "Backup-weging" },
-      "energy_tax": { "name": "Energiebelasting" },
-      "wear_cost": { "name": "Slijtagekosten" }
+      "aggressiveness": {
+        "name": "Agressiviteit"
+      },
+      "backup_target": {
+        "name": "Backup-streefwaarde"
+      },
+      "backup_weight": {
+        "name": "Backup-weging"
+      },
+      "energy_tax": {
+        "name": "Energiebelasting"
+      },
+      "wear_cost": {
+        "name": "Slijtagekosten"
+      }
     },
     "select": {
-      "netting_regime": { "name": "Salderingsregime", "state": { "2026": "2026 (saldering)", "2027": "2027 (geen saldering)" } }
+      "netting_regime": {
+        "name": "Salderingsregime",
+        "state": {
+          "2026": "2026 (saldering)",
+          "2027": "2027 (geen saldering)"
+        }
+      }
     }
   }
 }
