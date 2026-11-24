@@ -72,11 +72,19 @@ def main():
                   0.4 * s["cap"], 0.0005)
         for naam, args in (("accu_plan_eigen", args_e), ("accu_plan", args_p),
                            ("accu_plan_intern", args_i)):
-            a = oud[naam](*args)
-            b = getattr(nieuw, naam)(*args)
+            # laadvermogen apart (BMS-limiet, 24-11-2026): None, lager dan pq, of hoger
+            pql = rnd.choice([None, 0.9, 1.6, 3.0])
+            a = oud[naam](*args, pq_laden=pql)
+            b = getattr(nieuw, naam)(*args, pq_laden=pql)
             if a != b:
                 fouten += 1
-                print(f"VERSCHIL scenario {i} {naam}")
+                print(f"VERSCHIL scenario {i} {naam} pq_laden={pql}")
+            if pql is not None and pql < 2.5:
+                kw = [x - y for x, y, act in zip(b["soc"], [s["soc"]] + b["soc"][:-1],
+                                                   b["acties"]) if act == "L"]
+                if kw and max(kw) > pql * 0.95 + 1e-6:
+                    fouten += 1
+                    print(f"TE SNEL GELADEN scenario {i} {naam}: {max(kw):.3f} > {pql * 0.95:.3f}")
         for regime in ("2026", "2027"):
             for p in s["buy"][:5]:
                 x = oud["verkoopprijs"](p, regime, 0.0916, 1.21, 0.018, 0.018)

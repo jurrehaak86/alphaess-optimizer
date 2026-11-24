@@ -87,6 +87,12 @@ quarters unused.
 
 Default 10 kW. Example: 10 kW on a SMILE-G3-T10.
 
+Fill in the inverter's power here, even in winter. With AlphaESS Modbus TCP v1.16.0 or
+newer the optimizer also reads *Battery Max Charge Power* from the inverter, which is
+how much the battery's BMS allows right now. Charging is then planned at the lower of
+the two. You see the value it used in the `charge_power_kw` attribute of the *Action*
+sensor.
+
 ### Minimum state of charge (inverter floor)
 
 The state of charge at which the inverter stops discharging, in percent. The optimizer

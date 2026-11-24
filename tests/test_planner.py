@@ -79,3 +79,24 @@ if __name__ == "__main__":
         if n.startswith("test_"):
             f()
             print("ok", n)
+
+
+def test_bms_laadlimiet_begrenst_alleen_laden():
+    """Laden met 4 kW (koude accu), ontladen blijft 10 kW."""
+    r10 = planner.make_plan(_input(soc_pct=10.0))
+    r4 = planner.make_plan(_input(soc_pct=10.0, charge_power_kw=4.0))
+    assert r10["charge_power_kw"] == 10.0 and r4["charge_power_kw"] == 4.0
+
+    def stappen(r, actie):
+        q = r["plan_quarters"]
+        return [abs(b[2] - a[2]) for a, b in zip(q, q[1:]) if b[1] == actie]
+    assert max(stappen(r4, "charge")) <= 4.0 / 4 * 0.95 / 18.6 * 100 + 0.2
+    assert max(stappen(r10, "charge")) > 6
+    # zwakker laden -> meer laadkwartieren nodig
+    assert len(stappen(r4, "charge")) > len(stappen(r10, "charge"))
+
+
+def test_bms_laadlimiet_boven_omvormer_telt_niet():
+    r = planner.make_plan(_input(charge_power_kw=20.0))
+    assert r["charge_power_kw"] == 10.0
+    assert planner.make_plan(_input())["plan_quarters"] == r["plan_quarters"]

@@ -92,6 +92,25 @@ async def test_flow_en_setup(recorder_mock, hass):
                                    {"entity_id": ids["aggressiveness"], "value": 9}, blocking=True)
     await hass.async_block_till_done()
     assert hass.states.get(ids["action"]).attributes["aggressiveness"] == 9
+    # zonder BMS-sensor (AlphaESS Modbus TCP < v1.16.0) plant laden met het volle vermogen
+    assert hass.states.get(ids["action"]).attributes["charge_power_kw"] == 10.0
+    assert hass.states.get(ids["action"]).attributes["bms_charge_power_w"] is None
+
+    # BMS-laadlimiet verschijnt na een update van AlphaESS Modbus TCP: wordt zonder nieuwe
+    # setup gevonden en begrenst het laadvermogen (3880 W DC / ETA 0,95 = 4,08 kW AC)
+    ae = hass.config_entries.async_get_entry(AE)
+    bms = er.async_get(hass).async_get_or_create(
+        "sensor", "alphaess_modbus", f"{AE}_battery_max_charge_power",
+        suggested_object_id="alphaess_inverter_battery_max_charge_power",
+        config_entry=ae, device_id=dev.id)
+    hass.states.async_set(bms.entity_id, "3880", {"unit_of_measurement": "W"})
+    await entry.runtime_data.async_refresh()   # zoals de kwartiertrigger
+    await hass.async_block_till_done()
+    attrs = hass.states.get(ids["action"]).attributes
+    assert attrs["charge_power_kw"] == 4.08 and attrs["bms_charge_power_w"] == 3880
+    stappen = [b[2] - a[2] for a, b in zip(attrs["plan_quarters"], attrs["plan_quarters"][1:])
+               if b[1] == "charge"]
+    assert not stappen or max(stappen) <= 4.08 / 4 * 0.95 / 18.6 * 100 + 0.2
 
     # tweede keer dezelfde omvormer -> afbreken
     r = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})

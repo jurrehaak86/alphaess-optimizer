@@ -10,7 +10,7 @@ from __future__ import annotations
 def accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, reserve0, used_today,
               limit_kwh, pq, eta, step, res_factor, tv, allow_hold, tiebreak=1e-5,
               hold_at_plafond=True, reserve_reeks=None, limiet_morgen=True, wear=0.0, exp_pen=0.0,
-              allowed=None, lcap=None, doel_kwh=None, doel_straf=0.0):
+              allowed=None, lcap=None, doel_kwh=None, doel_straf=0.0, pq_laden=None):
     """Plan over de horizon. Alle reeksen per kwartier, index 0 = huidig kwartier.
 
     buy/sell: EUR/kWh all-in; load: kWh huisverbruik; dag: 0 = vandaag, 1 = morgen.
@@ -28,6 +28,9 @@ def accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, reserve0, used
     """
     n = len(buy)
     acts = ['B', 'L', 'O'] + (['H'] if allow_hold else [])
+    # laadvermogen per kwartier (AC) apart van ontladen: de BMS knijpt laden bij koude
+    # cellen (24-11-2026). None = gelijk aan pq.
+    pql = pq if pq_laden is None or pq_laden > pq else pq_laden
     # reserve in het plan: bouwt af met het verwachte verbruik (x factor), nooit onder vloer
     res = [0.0] * n
     cum = 0.0
@@ -48,7 +51,7 @@ def accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, reserve0, used
             if lcap is not None and lcap[t] < room:
                 room = lcap[t]
             if room > 1e-9 or hold_at_plafond:
-                c = pq if pq < room else room
+                c = pql if pql < room else room
                 if c < 0:
                     c = 0.0
                 return s + c * eta, 0.0, ld + c
@@ -174,7 +177,7 @@ def accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, reserve0, used
 def accu_plan_intern(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_today, limit_kwh,
                      pq, eta, step, res_factor, tv, allow_hold, tiebreak=1e-5,
                      hold_at_plafond=True, limiet_morgen=True, wear=0.0, exp_pen=0.0,
-                     doel_kwh=None, doel_straf=0.0):
+                     doel_kwh=None, doel_straf=0.0, pq_laden=None):
     """Twee rondes. 1) plan zonder reserve -> waar laadt het plan? 2) reserve per kwartier =
     vloer + res_factor x verbruik tot het volgende laadkwartier, en daarmee opnieuw plannen.
     Zo blijft er genoeg staan voor eigen verbruik tot het volgende laadmoment, maar springt de
@@ -182,7 +185,8 @@ def accu_plan_intern(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_to
     n = len(buy)
     p1 = accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, floor_kwh, used_today,
                    limit_kwh, pq, eta, step, res_factor, tv, allow_hold, tiebreak, hold_at_plafond,
-                   [floor_kwh] * n, limiet_morgen, wear, exp_pen, None, None, doel_kwh, doel_straf)
+                   [floor_kwh] * n, limiet_morgen, wear, exp_pen, None, None, doel_kwh, doel_straf,
+                   pq_laden)
     acts = p1['acties']
     res = [floor_kwh] * n
     acc = 0.0
@@ -195,7 +199,7 @@ def accu_plan_intern(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_to
         res[t] = r if r < plafond_kwh else plafond_kwh
     p2 = accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, res[0], used_today,
                    limit_kwh, pq, eta, step, res_factor, tv, allow_hold, tiebreak, hold_at_plafond,
-                   res, limiet_morgen, wear, exp_pen, None, None, doel_kwh, doel_straf)
+                   res, limiet_morgen, wear, exp_pen, None, None, doel_kwh, doel_straf, pq_laden)
     p2['dp_runs'] = p2['dp_runs'] + p1['dp_runs']
     return p2
 
@@ -205,7 +209,7 @@ def accu_plan_eigen(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_tod
                     hold_at_plafond=True, limiet_morgen=True, wear=0.0, exp_pen=0.0,
                     reserve_extern=None, doel_kwh=None, doel_straf=0.0,
                     hold_vrij=False, marge_vast=False, ext_factor=None, min_verkoop=0.0,
-                    ext_schaal=False):
+                    ext_schaal=False, pq_laden=None):
     """Eigen verbruik eerst (wens Jurre 27-10-2026), als harde regels:
     A) plan ZONDER verkoop: alleen balans, laden en vasthouden. Laden gebeurt dus alleen als
        het goedkoper is dan het latere eigen verbruik dat het dekt.
@@ -217,7 +221,7 @@ def accu_plan_eigen(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_tod
     zonder_o = [('BLH' if allow_hold else 'BL')] * n
     pa = accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, floor_kwh, used_today,
                    limit_kwh, pq, eta, step, res_factor, tv, allow_hold, tiebreak, hold_at_plafond,
-                   [floor_kwh] * n, limiet_morgen, wear, exp_pen, zonder_o, None, doel_kwh, doel_straf)
+                   [floor_kwh] * n, limiet_morgen, wear, exp_pen, zonder_o, None, doel_kwh, doel_straf, pq_laden)
     acts = pa['acties']; soc = pa['soc']
     lcap = [0.0] * n
     prev = soc0
@@ -283,7 +287,7 @@ def accu_plan_eigen(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, used_tod
             cum += load[t]
     pb = accu_plan(buy, sell, load, dag, soc0, floor_kwh, plafond_kwh, res[0], used_today,
                    limit_kwh, pq, eta, step, res_factor, tv, allow_hold, tiebreak, hold_at_plafond,
-                   res, limiet_morgen, wear, exp_pen, toegestaan, lcap, doel_kwh, doel_straf)
+                   res, limiet_morgen, wear, exp_pen, toegestaan, lcap, doel_kwh, doel_straf, pq_laden)
     pb['dp_runs'] = pb['dp_runs'] + pa['dp_runs']
     if min_verkoop > 0:
         # minimale verkoop (11-11-2026): een ontlaadkwartier dat minder dan min_verkoop kWh

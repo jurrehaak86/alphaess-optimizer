@@ -14,7 +14,13 @@ ALPHAESS_SUFFIX = {
     "capacity": "_battery_capacity_kwh",
     "house_load": "_current_house_load",
     "pv_power": "_current_pv_production",
+    # vanaf ha-alphaess-modbus v1.16.0; optioneel, wordt elke planronde opgezocht
+    "bms_charge_power": "_battery_max_charge_power",
 }
+
+# Laden plant met de huidige BMS-laadlimiet (koude cellen, lage SoC), nooit onder deze
+# ondergrens. Backtest winter 2025/26: zie docs/how-it-decides in de README.
+MIN_CHARGE_KW = 1.0
 
 # --- config entry (data) --------------------------------------------------------
 CONF_DEVICE = "device_id"

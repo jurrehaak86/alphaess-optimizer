@@ -161,7 +161,7 @@ Everything except the inverter can be changed later under *Configure*.
 
 | Entity | |
 |---|---|
-| `sensor.…_action` | `charge` / `discharge` / `balance` / `hold`. Attributes: reason, plan in blocks, `plan_quarters` (start, action, SoC, price), reserve, cycles, cost |
+| `sensor.…_action` | `charge` / `discharge` / `balance` / `hold`. Attributes: reason, plan in blocks, `plan_quarters` (start, action, SoC, price), reserve, cycles, cost, `charge_power_kw` (the charging power the plan uses) |
 | `sensor.…_next_charge` / `_next_discharge` / `_next_hold` | Next block as text, e.g. `tomorrow 06:00–06:30 · 55%` |
 | `sensor.…_reserve`, `sensor.…_charge_ceiling` | Diagnostics |
 | `number.…_aggressiveness` | 1 = only own consumption, 5 = default, 10 = free trading |
@@ -179,6 +179,15 @@ Everything except the inverter can be changed later under *Configure*.
   battery is not drained at the horizon edge.
 - A daily cycle limit is enforced with a Lagrange penalty on discharged kWh.
 - Wear cost per discharged kWh is part of every trade-off.
+- Charging is planned at the power the battery accepts right now. The battery's BMS
+  limits the charge current when the cells are cold or the state of charge is low. On
+  the author's battery that is about 4 kW at 10 °C, against 10 kW when it's warm.
+  The value comes from *Battery Max Charge Power* (AlphaESS Modbus TCP v1.16.0 or
+  newer); without that sensor the plan uses the full inverter power. Discharging always
+  uses the full power. A backtest over winter 2025/26 with a battery model fitted to
+  real charging sessions gained EUR 1.50 to 6.50 per winter at 8–11 °C. Charging warms
+  the cells, so the limit rises during a long session. The plan doesn't model that,
+  but it replans every quarter hour.
 
 ## Known limitations
 

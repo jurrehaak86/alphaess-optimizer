@@ -14,6 +14,7 @@ from .planner import moment_text
 ACTION_OPTIONS = ["charge", "discharge", "balance", "hold"]
 ACTION_ATTRS = (
     "reason", "soc_now", "expected_soc_end_of_quarter", "ceiling_pct", "reserve_pct",
+    "charge_power_kw", "bms_charge_power_w",
     "strategy", "aggressiveness", "sell_threshold_eur_kwh", "hold_allowed", "cycle_limit",
     "cycles_today", "cycles_planned_today", "regime", "energy_tax", "wear_eur_kwh",
     "price_now", "sell_price_now", "horizon_until", "tomorrow_known",

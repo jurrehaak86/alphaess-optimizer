@@ -50,6 +50,7 @@ class PlanInput:
     backup_target_pct: float
     backup_weight: float
     tomorrow_known: bool = False
+    charge_power_kw: float | None = None   # AC; None = power_kw (geen BMS-sensor)
     extra: dict = field(default_factory=dict)
 
 
@@ -88,6 +89,9 @@ def make_plan(inp: PlanInput) -> dict:
     target_kwh = inp.backup_target_pct / 100.0 * cap
     penalty = inp.backup_weight * BACKUP_PENALTY_PER_WEIGHT
     pq = inp.power_kw / 4.0
+    charge_kw = inp.power_kw if inp.charge_power_kw is None else min(inp.power_kw,
+                                                                       inp.charge_power_kw)
+    pq_charge = charge_kw / 4.0
 
     if cfg["strategy"] == "eigen_verbruik_eerst":
         # reserve intern: verbruik tot het volgende laadmoment uit het eigen plan
@@ -95,18 +99,22 @@ def make_plan(inp: PlanInput) -> dict:
             buy, sell, load, day, soc, floor_kwh, ceiling, inp.discharged_today_kwh, limit,
             pq, inp.eta, SOC_STEP_KWH, RESERVE_FACTOR, tv, cfg["hold"], TIEBREAK,
             HOLD_AT_CEILING, True, inp.wear, cfg["threshold"], None, target_kwh, penalty,
-            RESERVE_HOLD_FREE, RESERVE_MARGIN_FIXED, None, MIN_SELL_KWH, False)
+            RESERVE_HOLD_FREE, RESERVE_MARGIN_FIXED, None, MIN_SELL_KWH, False,
+            pq_laden=pq_charge)
     else:
         plan = kern.accu_plan_intern(
             buy, sell, load, day, soc, floor_kwh, ceiling, inp.discharged_today_kwh, limit,
             pq, inp.eta, SOC_STEP_KWH, RESERVE_FACTOR, tv, cfg["hold"], TIEBREAK,
-            HOLD_AT_CEILING, True, inp.wear, cfg["threshold"], target_kwh, penalty)
+            HOLD_AT_CEILING, True, inp.wear, cfg["threshold"], target_kwh, penalty,
+            pq_laden=pq_charge)
 
     acts = plan["acties"]
     a0 = acts[0]
     reserve_pct = round(100.0 * plan["reserve_plan"][0] / cap, 1)
     if a0 == "L":
         reason = f"charge: {buy[0] * 100:.1f} ct is cheap compared to later in the horizon"
+        if charge_kw < inp.power_kw - 0.05:
+            reason += f"; the battery accepts {charge_kw:.1f} kW now"
     elif a0 == "O":
         reason = f"discharge: selling at {sell[0] * 100:.1f} ct pays off above reserve {reserve_pct:.0f}%"
     elif a0 == "H":
@@ -136,6 +144,7 @@ def make_plan(inp: PlanInput) -> dict:
         "soc_now": round(inp.soc_pct, 1),
         "expected_soc_end_of_quarter": round(100 * plan["soc"][0] / cap, 1),
         "ceiling_pct": round(inp.ceiling_pct, 1),
+        "charge_power_kw": round(charge_kw, 2),
         "reserve_pct": reserve_pct,
         "strategy": cfg["strategy"],
         "aggressiveness": cfg["level"],

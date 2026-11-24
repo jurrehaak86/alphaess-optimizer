@@ -8,6 +8,7 @@ import time
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -15,7 +16,9 @@ from homeassistant.util import dt as dt_util
 
 from . import planner
 from .const import (
+    ALPHAESS_SUFFIX,
     CONF_CAPACITY,
+    CONF_DEVICE,
     CONF_ETA,
     CONF_EV_POWER,
     CONF_FEE_IN,
@@ -41,6 +44,7 @@ from .const import (
     KEY_ENERGY_TAX,
     KEY_REGIME,
     KEY_WEAR,
+    MIN_CHARGE_KW,
     PROFILE_DAYS,
     RUNTIME_DEFAULTS,
 )
@@ -204,6 +208,23 @@ class OptimizerCoordinator(DataUpdateCoordinator[dict]):
         self._profile_date = now.date()
 
     # ------------------------------------------------------------------ plan
+    def _charge_power_kw(self, power_kw: float, eta: float) -> tuple[float | None, int | None]:
+        """AC-laadvermogen volgens de BMS (Battery Max Charge Power, DC in W) of None.
+
+        Wordt elke ronde op het apparaat opgezocht, zodat een latere update van AlphaESS
+        Modbus TCP (v1.16.0 voegde de sensor toe) zonder nieuwe setup meetelt."""
+        device_id = self.conf.get(CONF_DEVICE)
+        if not device_id:
+            return None, None
+        reg = er.async_get(self.hass)
+        suffix = ALPHAESS_SUFFIX["bms_charge_power"]
+        ent = next((e.entity_id for e in er.async_entries_for_device(reg, device_id)
+                    if str(e.unique_id).endswith(suffix)), None)
+        w = _float(self.hass, ent)
+        if w is None or w < 0:
+            return None, None
+        return max(MIN_CHARGE_KW, min(power_kw, w / 1000.0 / eta)), round(w)
+
     async def _async_update_data(self) -> dict:
         c = self.conf
         now = dt_util.now()
@@ -232,6 +253,7 @@ class OptimizerCoordinator(DataUpdateCoordinator[dict]):
 
         eta = float(c[CONF_ETA])
         used = self._discharged_today(soc_pct / 100.0 * cap, now.date().isoformat(), eta)
+        charge_kw, bms_w = self._charge_power_kw(float(c[CONF_POWER_KW]), eta)
         inp = planner.PlanInput(
             now=now, prices=prices, soc_pct=soc_pct, capacity_kwh=cap,
             ceiling_pct=self._ceiling(cap), floor_pct=float(c[CONF_FLOOR_PCT]),
@@ -242,7 +264,8 @@ class OptimizerCoordinator(DataUpdateCoordinator[dict]):
             wear=float(s[KEY_WEAR]), aggressiveness=int(s[KEY_AGGRESSIVENESS]),
             backup_target_pct=float(s[KEY_BACKUP_TARGET]),
             backup_weight=float(s[KEY_BACKUP_WEIGHT]), tomorrow_known=tomorrow,
-            extra={"profile": self._profile_source},
+            charge_power_kw=charge_kw,
+            extra={"profile": self._profile_source, "bms_charge_power_w": bms_w},
         )
         t0 = time.monotonic()
         result = await self.hass.async_add_executor_job(planner.make_plan, inp)
