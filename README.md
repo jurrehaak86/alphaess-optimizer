@@ -29,7 +29,7 @@ Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
 
 | | |
 |---|---|
-| [AlphaESS Modbus TCP](https://github.com/senalse/ha-alphaess-modbus) | Required. State of charge, capacity and house load come from here |
+| [AlphaESS Modbus TCP](https://github.com/senalse/ha-alphaess-modbus) | Required. State of charge, capacity and house load come from here. Should work with every model that integration supports; tested on a SMILE-G3-T10 |
 | [Nord Pool, community version](https://github.com/custom-components/nordpool) | Required. Needs the `raw_today` / `raw_tomorrow` attributes. The built-in Nord Pool integration is not supported yet |
 | Recorder | Built in. The consumption profile comes from long-term statistics |
 | Solar forecast | Optional. Any sensor with "remaining today" in kWh (Forecast.Solar, Solcast, ...) |
