@@ -7,7 +7,8 @@ what to fill in. The help text in Home Assistant itself is short; this is the lo
 The integration gives advice. It tells you per quarter hour whether the battery should
 charge, discharge, balance or hold, and publishes the full plan as sensors. It does not
 send commands to the inverter, so you can safely run it next to whatever controls your
-battery today. Acting on the advice, for example with an automation, is up to you.
+battery today. To act on the advice, add the example automation described in
+[automation.md](automation.md).
 
 The price and tax logic is Dutch: netting (saldering) until the end of 2026, no netting
 from 1 January 2027.
@@ -326,6 +327,11 @@ The Action sensor carries the whole plan in its attributes:
 
 The plan is recalculated every quarter hour on the hour, and right away when you change
 one of the setting entities.
+
+## Controlling the battery
+
+Once the advice looks right, add the example automation that carries it out. See
+[automation.md](automation.md).
 
 ## Dashboard
 

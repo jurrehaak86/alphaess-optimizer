@@ -20,9 +20,10 @@ For every quarter hour the integration picks one of four actions: **charge**, **
 prices (today, and tomorrow once they're published) with dynamic programming over the
 state of charge, and replans every 15 minutes.
 
-> **The integration advises; it does not control the inverter.** It publishes the decision
-> and the full plan as sensors. How the advice reaches your battery is up to you, for
-> example with an automation that follows the Action sensor. Not affiliated with AlphaESS.
+> **The integration advises; it does not control the inverter by itself.** It publishes the
+> decision and the full plan as sensors. To act on it, add the example automation in
+> [automations/battery-control.yaml](automations/battery-control.yaml); see
+> [docs/automation.md](docs/automation.md). Not affiliated with AlphaESS.
 
 Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
 
@@ -86,6 +87,13 @@ Everything except the inverter can be changed later under *Configure*.
   four weeks after a holiday the profile, and so the reserve, comes out somewhat low.
 - Prices only come from the community Nord Pool integration. The built-in Nord Pool
   integration and other price sources (Tibber, ENTSO-e and so on) aren't supported.
+
+## Controlling the battery
+
+[automations/battery-control.yaml](automations/battery-control.yaml) carries out the advice
+through the dispatch entities of AlphaESS Modbus TCP: the automation that controls the
+author's own battery. [docs/automation.md](docs/automation.md) explains what it does and what
+to check before you add it.
 
 ## Dashboard
 

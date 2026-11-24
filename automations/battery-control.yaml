@@ -1,0 +1,296 @@
+# AlphaESS Battery Optimizer: example automation that carries out the advice.
+#
+# The integration only advises. This automation sends that advice to the inverter through
+# the dispatch entities of AlphaESS Modbus TCP. It is the automation that has controlled the
+# author's SMILE-G3-T10 since the end of October 2026, switched to this integration's sensors
+# and with personal helpers taken out.
+#
+# Entity IDs assume the default names: an inverter device called "AlphaESS Inverter" in
+# AlphaESS Modbus TCP, and the optimizer set up on that device. See docs/automation.md.
+#
+# Add it under Settings > Automations & scenes > Create automation > Create new automation,
+# then menu (three dots) > Edit in YAML, and replace everything with this file.
+#
+# Dispatch power is in kW. -10 / 10 fits a 10 kW inverter; use your own inverter's power.
+#
+# Action      Dispatch mode                       Power   Effect
+# charge      Optimise Consumption (6)            -10     charge from the grid at full power
+# discharge   Maximise Output (4)                  10     discharge to house and grid
+# hold        Battery only Charges from PV (1)    -10     no discharging; solar surplus may charge
+# balance     Load Following (3)                  -10     battery supplies the house
+alias: AlphaESS Battery Optimizer - control
+description: >-
+  Carries out the advice of AlphaESS Battery Optimizer (charge, discharge, hold, balance)
+  through the AlphaESS Modbus TCP dispatch entities, with safety checks for a stale plan,
+  missing state of charge, the reserve and the charge ceiling.
+mode: queued
+max: 3
+triggers:
+  - trigger: time_pattern
+    minutes: /15
+    seconds: 10
+    id: quarter
+  - trigger: state
+    entity_id: sensor.optimizer_alphaess_inverter_action
+    not_from:
+      - unavailable
+      - unknown
+    id: action
+  - trigger: template
+    value_template: >-
+      {{ is_state('sensor.optimizer_alphaess_inverter_action', 'discharge')
+         and states('sensor.alphaess_inverter_battery_state_of_charge') | float(100)
+             <= state_attr('sensor.optimizer_alphaess_inverter_action', 'expected_soc_end_of_quarter') | float(0) + 0.5 }}
+    id: discharge_target_reached
+  - trigger: template
+    value_template: >-
+      {{ is_state('sensor.optimizer_alphaess_inverter_action', 'charge')
+         and states('sensor.alphaess_inverter_battery_state_of_charge') | float(0)
+             >= state_attr('sensor.optimizer_alphaess_inverter_action', 'expected_soc_end_of_quarter') | float(100) - 0.5 }}
+    id: charge_target_reached
+  - trigger: numeric_state
+    entity_id: sensor.alphaess_inverter_battery_state_of_charge
+    below: sensor.optimizer_alphaess_inverter_reserve
+    for:
+      seconds: 30
+    id: below_reserve
+  - trigger: numeric_state
+    entity_id: sensor.alphaess_inverter_battery_state_of_charge
+    above: sensor.optimizer_alphaess_inverter_charge_ceiling
+    for:
+      seconds: 30
+    id: above_ceiling
+  - trigger: numeric_state
+    entity_id: sensor.alphaess_inverter_battery_state_of_charge
+    above: 98
+    for:
+      seconds: 30
+    id: above_98
+  - trigger: template
+    value_template: >-
+      {{ is_state('switch.alphaess_inverter_excess_export', 'on')
+         and states('sensor.alphaess_inverter_current_pv_production') | float(0)
+             < states('sensor.alphaess_inverter_current_house_load') | float(0) }}
+    for:
+      seconds: 30
+    id: no_surplus
+  - trigger: state
+    entity_id: sensor.alphaess_inverter_battery_state_of_charge
+    to:
+      - unavailable
+      - unknown
+    for:
+      minutes: 10
+    id: soc_missing
+  - trigger: state
+    entity_id: sensor.alphaess_inverter_battery_state_of_charge
+    from:
+      - unavailable
+      - unknown
+    id: soc_back
+conditions: []
+variables:
+  advice: "{{ states('sensor.optimizer_alphaess_inverter_action') }}"
+  soc_target: "{{ state_attr('sensor.optimizer_alphaess_inverter_action', 'expected_soc_end_of_quarter') | float(-1) }}"
+  age_s: >-
+    {{ (now() - states.sensor.optimizer_alphaess_inverter_action.last_updated).total_seconds()
+       if states.sensor.optimizer_alphaess_inverter_action is not none else 99999 }}
+  ceiling: "{{ states('sensor.optimizer_alphaess_inverter_charge_ceiling') | float(-1) }}"
+  reserve: "{{ states('sensor.optimizer_alphaess_inverter_reserve') | float(999) }}"
+  soc: "{{ states('sensor.alphaess_inverter_battery_state_of_charge') | float(-1) }}"
+actions:
+  - choose:
+      - alias: No state of charge
+        conditions:
+          - condition: state
+            entity_id: sensor.alphaess_inverter_battery_state_of_charge
+            state:
+              - unavailable
+              - unknown
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_power
+            data:
+              value: -10
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_duration
+            data:
+              value: 15
+          - action: select.select_option
+            target:
+              entity_id: select.alphaess_inverter_dispatch_mode
+            data:
+              option: Load Following (3)
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_dispatch
+          - if:
+              - condition: trigger
+                id: soc_missing
+            then:
+              - action: persistent_notification.create
+                data:
+                  notification_id: alphaess_optimizer_no_soc
+                  title: "Battery: no state of charge"
+                  message: >-
+                    {{ now().strftime('%H:%M') }}: the AlphaESS state of charge has been
+                    unavailable for 10 minutes. The battery is on balance. The optimizer
+                    advises '{{ advice }}'.
+      - alias: Charge
+        conditions:
+          - condition: template
+            value_template: >-
+              {{ age_s <= 1200 and advice == 'charge' and ceiling >= 0
+                 and soc < ceiling - 0.1 and soc < soc_target - 0.5 }}
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_power
+            data:
+              value: -10
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_duration
+            data:
+              value: 15
+          - action: select.select_option
+            target:
+              entity_id: select.alphaess_inverter_dispatch_mode
+            data:
+              option: Optimise Consumption (6)
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_dispatch
+      - alias: Optimizer unavailable
+        conditions:
+          - condition: template
+            value_template: >-
+              {{ age_s > 1200 or advice not in ['charge', 'discharge', 'hold', 'balance'] }}
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_power
+            data:
+              value: -10
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_duration
+            data:
+              value: 15
+          - action: select.select_option
+            target:
+              entity_id: select.alphaess_inverter_dispatch_mode
+            data:
+              option: Load Following (3)
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_dispatch
+          - action: persistent_notification.create
+            data:
+              notification_id: alphaess_optimizer_stale
+              title: Battery optimizer unavailable
+              message: >-
+                {{ now().strftime('%H:%M') }}: advice '{{ advice }}', last update
+                {{ (age_s / 60) | round(0) }} min ago. The battery is on balance.
+      - alias: Excess export
+        conditions:
+          - condition: template
+            value_template: "{{ advice in ['balance', 'hold'] }}"
+          - condition: template
+            value_template: >-
+              {{ soc > 95 if is_state('switch.alphaess_inverter_excess_export', 'on') else soc > 98 }}
+          - condition: template
+            value_template: >-
+              {{ states('sensor.alphaess_inverter_current_pv_production') | float(0)
+                 > states('sensor.alphaess_inverter_current_house_load') | float(0) }}
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+      - alias: Discharge
+        conditions:
+          - condition: template
+            value_template: >-
+              {{ advice == 'discharge' and reserve < 999
+                 and soc > reserve + 0.1 and soc > soc_target + 0.5 }}
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_power
+            data:
+              value: 10
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_duration
+            data:
+              value: 15
+          - action: select.select_option
+            target:
+              entity_id: select.alphaess_inverter_dispatch_mode
+            data:
+              option: Maximise Output (4)
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_dispatch
+      - alias: Hold
+        conditions:
+          - condition: template
+            value_template: "{{ advice in ['hold', 'charge'] }}"
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.alphaess_inverter_excess_export
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_power
+            data:
+              value: -10
+          - action: number.set_value
+            target:
+              entity_id: number.alphaess_inverter_dispatch_duration
+            data:
+              value: 15
+          - action: select.select_option
+            target:
+              entity_id: select.alphaess_inverter_dispatch_mode
+            data:
+              option: Battery only Charges from PV (1)
+          - action: switch.turn_on
+            target:
+              entity_id: switch.alphaess_inverter_dispatch
+    default:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.alphaess_inverter_excess_export
+      - action: number.set_value
+        target:
+          entity_id: number.alphaess_inverter_dispatch_power
+        data:
+          value: -10
+      - action: number.set_value
+        target:
+          entity_id: number.alphaess_inverter_dispatch_duration
+        data:
+          value: 15
+      - action: select.select_option
+        target:
+          entity_id: select.alphaess_inverter_dispatch_mode
+        data:
+          option: Load Following (3)
+      - action: switch.turn_on
+        target:
+          entity_id: switch.alphaess_inverter_dispatch
