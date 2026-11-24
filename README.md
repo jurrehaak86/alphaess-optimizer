@@ -25,7 +25,21 @@ state of charge, and replans every 15 minutes.
 > [automations/battery-control.yaml](automations/battery-control.yaml); see
 > [docs/automation.md](docs/automation.md). Not affiliated with AlphaESS.
 
-Netting rules and energy tax are Dutch (saldering until 2026, none from 2027).
+### Best with a dynamic tariff
+
+The optimizer earns its money from price differences between quarter hours: it charges when
+power is cheap and uses or sells it when power is expensive. That needs a dynamic
+(day-ahead) contract. On a fixed price there is little to plan, and the battery does about
+the same as the self-consumption mode in the AlphaESS app.
+
+### Countries and netting rules
+
+Netting rules and energy tax are Dutch: netting (*saldering*) applies until the end of 2026
+and ends in 2027. In 2027 the integration gets an update for the new Dutch rules.
+
+Live somewhere else? Send me your country's rules (how export is paid, taxes, fees) in an
+[issue](https://github.com/jurrehaak86/alphaess-optimizer/issues). I can build them in
+with a country selector.
 
 ## How the pieces fit together
 
@@ -71,6 +85,51 @@ The optimizer never writes to the inverter. Turn the automation off and the inve
 back to its own settings once the last dispatch command runs out.
 
 ![Battery plan chart](docs/images/plan-chart.png)
+
+## Example: one year on the author's setup
+
+What does it save? A backtest over one year of Dutch day-ahead prices (October 2025 to
+October 2026), with the author's own consumption and solar production, compares three
+situations:
+
+- **No battery.**
+- **AlphaESS app, self-consumption:** solar surplus goes into the battery, the house uses it
+  when the sun is gone, never charging from the grid.
+- **Optimizer:** this integration's planner, replanning every quarter hour with only the
+  prices known at that moment, carried out the way the example automation does it.
+
+Setup: 4,300 kWh household consumption per year (the electric car is left out, because it
+charges straight from the grid at cheap hours), 3,140 kWh solar, an 18.6 kWh battery with
+10 kW, aggressiveness 5.
+
+| Energy cost per year, incl. VAT | No battery | AlphaESS app | Optimizer |
+|---|---|---|---|
+| 2026 rules (with netting) | €502 | €395 | €118 |
+| Saving compared to no battery | | €107 | €384 |
+| 2027 rules (no netting) | €705 | €462 | €361 |
+| Saving compared to no battery | | €243 | €344 |
+| Battery cycles per year (2026 / 2027) | | 51 / 51 | 128 / 91 |
+
+So on top of the app the optimizer saved €277 a year under the 2026 rules and €101 under
+the 2027 rules. It does cycle the battery more. At 3 cents of wear per discharged kWh, that
+extra use costs about €41 (2026) and €21 (2027), which leaves €236 and €80.
+
+How the numbers were made:
+
+- Prices: Dutch day-ahead per quarter hour, with €0.018/kWh supplier fee each way, energy
+  tax €0.0916/kWh and 21% VAT. Under the 2026 rules, export is netted against import with a
+  €0.0248/kWh deduction.
+- Consumption: a standard daily profile scaled to the real monthly totals. Solar: the real
+  production per day, spread over the day by the position of the sun. Clouds within a day
+  and peaks in consumption (cooking, heat pump) are not in it.
+- Battery: 95% efficiency each way, usable between 4.4% and 98%. The charge ceiling comes
+  from a solar forecast equal to yesterday's production.
+- Fixed costs (standing charge, grid fees, tax credit) are the same in all three situations
+  and left out.
+
+Your result depends on your consumption, solar, battery size and how much prices move. With
+a smaller battery or a fixed tariff the gain is smaller. Past prices don't guarantee future
+ones.
 
 ## Requirements
 
