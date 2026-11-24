@@ -53,6 +53,14 @@ It also has a few safety checks:
    `sensor.optimizer_alphaess_inverter_…` for this integration. Renamed your inverter? Use
    find and replace.
 
+   Watch out if the inverter device is assigned to an area. Home Assistant then puts the
+   area in the ID of every entity an update adds, while the existing entities keep their
+   ID. After updating to v1.16.0 with the inverter in an area called *Utility room*, the
+   new sensor is `sensor.utility_room_alphaess_inverter_excess_power`, not
+   `sensor.alphaess_inverter_excess_power`. Search your entities for `excess_power` and
+   `excess_export_duration`, and either rename them (entity settings → Entity ID) or
+   change the IDs in the YAML.
+
 ## Add it
 
 1. Go to **Settings → Automations & scenes → Create automation → Create new automation**.
