@@ -95,7 +95,7 @@ situations:
 - **No battery.**
 - **AlphaESS app, self-consumption:** solar surplus goes into the battery, the house uses it
   when the sun is gone, never charging from the grid.
-- **Optimizer:** this integration's planner, replanning every quarter hour with only the
+- **Optimizer:** this integration's planner (v0.2.0), replanning every quarter hour with only the
   prices known at that moment, carried out the way the example automation does it.
 
 Setup: 4,300 kWh household consumption per year (the electric car is left out, because it
@@ -104,15 +104,15 @@ charges straight from the grid at cheap hours), 3,140 kWh solar, an 18.6 kWh bat
 
 | Energy cost per year, incl. VAT | No battery | AlphaESS app | Optimizer |
 |---|---|---|---|
-| 2026 rules (with netting) | €502 | €395 | €118 |
-| Saving compared to no battery | | €107 | €384 |
-| 2027 rules (no netting) | €705 | €462 | €361 |
-| Saving compared to no battery | | €243 | €344 |
-| Battery cycles per year (2026 / 2027) | | 51 / 51 | 128 / 91 |
+| 2026 rules (with netting) | €502 | €395 | €119 |
+| Saving compared to no battery | | €107 | €383 |
+| 2027 rules (no netting) | €705 | €462 | €363 |
+| Saving compared to no battery | | €243 | €342 |
+| Battery cycles per year (2026 / 2027) | | 51 / 51 | 126 / 89 |
 
-So on top of the app the optimizer saved €277 a year under the 2026 rules and €101 under
+So on top of the app the optimizer saved €276 a year under the 2026 rules and €99 under
 the 2027 rules. It does cycle the battery more. At 3 cents of wear per discharged kWh, that
-extra use costs about €41 (2026) and €21 (2027), which leaves €236 and €80.
+extra use costs about €40 (2026) and €20 (2027), which leaves €236 and €79.
 
 How the numbers were made:
 
@@ -124,6 +124,12 @@ How the numbers were made:
   and peaks in consumption (cooking, heat pump) are not in it.
 - Battery: 95% efficiency each way, usable between 4.4% and 98%. The charge ceiling comes
   from a solar forecast equal to yesterday's production.
+- Charging power: the battery's BMS lowers the charge current when the cells are cold or the
+  state of charge is low. The backtest uses a model of that, fitted on measured charging
+  sessions, with the battery's resting temperature per month (measured May to November,
+  assumed 8 to 13 °C for December to April). The planner gets the current limit, as it does
+  from the *Battery Max Charge Power* sensor. Compared with v0.1.0, which planned with the
+  full 10 kW, that saves about €5 a year under the 2026 rules and €1 under 2027.
 - Fixed costs (standing charge, grid fees, tax credit) are the same in all three situations
   and left out.
 
